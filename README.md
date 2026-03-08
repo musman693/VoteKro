@@ -1,50 +1,90 @@
-# Welcome to your Expo app 👋
+# VoteKro: Secure Digital Voting (React Native + Supabase)
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This project now includes a secure online database schema and TypeScript class/service layer for a decentralized-style digital voting system based on blockchain concepts.
 
-## Get started
+## What was added
+
+- Online database schema: `database/supabase-schema.sql`
+- Strong role model: Admin, Voter, Auditor
+- Blockchain-style vote ledger with hash linking and tamper checks
+- One-person-one-vote enforcement through transaction-safe RPC
+- Typed domain classes: `lib/models/entities.ts`
+- Secure service layer: `lib/services/*`
+- Crypto helpers (SHA-256 nonce + commitments): `lib/security/crypto.ts`
+
+## Database design highlights
+
+- `profiles`: system users + role and verification state
+- `elections`: election metadata, schedule, status lifecycle
+- `candidates`: candidates per election
+- `voter_registry`: eligibility + has-voted tracking (no vote choice stored)
+- `vote_blocks`: immutable encrypted vote chain (`previous_hash`, `current_hash`)
+- `audit_logs`: admin and voting activity logs
+
+Core secure SQL functions:
+
+- `cast_vote_secure(...)`: verifies user, election window, and duplicate-vote prevention
+- `append_vote_block(...)`: appends next block using previous hash
+- `verify_chain(...)`: validates blockchain integrity for auditors
+
+## Security model
+
+- HTTPS/TLS for all app-to-cloud communication
+- Row-Level Security (RLS) enabled on all critical tables
+- Role-based access control via `profiles.role`
+- Clients cannot directly insert vote blocks
+- Votes cast through RPC function with eligibility checks
+- Vote payload intended to be encrypted before storage
+- Hash commitments and chain verification detect tampering
+
+## Setup
 
 1. Install dependencies
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+2. Create a Supabase project (online PostgreSQL)
 
-## Learn more
+3. Open Supabase SQL Editor and execute:
 
-To learn more about developing your project with Expo, look at the following resources:
+```sql
+-- paste and run
+database/supabase-schema.sql
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+4. Add environment variables in `.env`:
 
-## Join the community
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+EXPO_PUBLIC_CAST_VOTE_EDGE_URL=
+```
 
-Join our community of developers creating universal apps.
+5. Start the app
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx expo start
+```
+
+## Class and service usage
+
+- `AuthService`: sign in/out and load profile
+- `AdminService`: create elections, add candidates, register voters, open/close elections
+- `VotingService`: load candidates, cast vote through secure RPC, verify election chain
+- `AuditorService`: inspect ledger, verify chain, read audit logs
+
+Import example:
+
+```ts
+import { AdminService, VotingService, AuditorService } from '@/lib/services';
+```
+
+## Production hardening recommendations
+
+- Encrypt `encrypted_vote` in a trusted server component (Edge Function), not directly on device
+- Enable MFA for admin accounts
+- Rotate JWT secrets and database credentials regularly
+- Add rate limiting for auth and vote APIs
+- Add independent result publication signatures for auditors
