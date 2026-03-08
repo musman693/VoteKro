@@ -4,7 +4,7 @@ import type {
     ElectionStatus,
     UserRole,
     VoteBlockRow,
-} from '@/lib/types/database';
+} from '@/class/database-types';
 
 export class UserAccount {
   constructor(
@@ -62,6 +62,7 @@ export class VoteBlock {
     if (!previous) {
       return this.row.previous_hash === '0'.repeat(64);
     }
+
     return this.row.previous_hash === previous.row.current_hash;
   }
 }

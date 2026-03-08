@@ -2,11 +2,11 @@ import { Image } from 'expo-image';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 
+import { supabase } from '@/class/supabase-client';
 import { HelloWave } from '@/components/hello-wave';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { supabase } from '@/lib/services/supabase-client';
 
 type DbStatus = 'loading' | 'success' | 'failed';
 

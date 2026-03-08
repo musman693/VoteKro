@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-import { env } from '@/lib/config/env';
+import { env } from '@/class/env';
 
 export const supabase = createClient(env.supabaseUrl, env.supabaseAnonKey, {
   auth: {
