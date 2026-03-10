@@ -1,7 +1,7 @@
 import { BaseService } from '@/class/base-service';
 import type { ProfileRow } from '@/class/database-types';
 import { AuthenticationError } from '@/class/errors';
-import type { IAuthRepository, IProfileRepository } from '@/class/service-contracts';
+import type { IAuthRepository, IProfileRepository, SignUpInput } from '@/class/service-contracts';
 
 export class AuthService extends BaseService {
   constructor(
@@ -15,6 +15,20 @@ export class AuthService extends BaseService {
     this.requireNonEmpty(email, 'Email');
     this.requireNonEmpty(password, 'Password');
     await this.authRepository.signIn(email, password);
+  }
+
+  async signUp(input: SignUpInput): Promise<ProfileRow> {
+    this.requireNonEmpty(input.email, 'Email');
+    this.requireNonEmpty(input.password, 'Password');
+    this.requireNonEmpty(input.fullName, 'Full name');
+
+    // Create auth user
+    const userId = await this.authRepository.signUp(input.email, input.password);
+
+    // Create profile
+    const profile = await this.profileRepository.create(userId, input.fullName, input.role);
+
+    return profile;
   }
 
   async signOut(): Promise<void> {

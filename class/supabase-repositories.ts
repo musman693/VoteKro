@@ -1,28 +1,29 @@
 import type {
-    AuditLogRow,
-    CandidateRow,
-    ElectionRow,
-    ProfileRow,
-    VerifyChainResultRow,
-    VoteBlockRow,
-    VoterRegistryRow,
+  AuditLogRow,
+  CandidateRow,
+  ElectionRow,
+  ProfileRow,
+  VerifyChainResultRow,
+  VoteBlockRow,
+  VoterRegistryRow,
 } from '@/class/database-types';
 import { DataAccessError } from '@/class/errors';
 import type {
-    AddCandidateInput,
-    CreateElectionInput,
-    IAuditLogRepository,
-    IAuthRepository,
-    ICandidateRepository,
-    IElectionRepository,
-    IProfileRepository,
-    IVoteLedgerRepository,
-    IVoterRegistryRepository,
+  AddCandidateInput,
+  CreateElectionInput,
+  IAuditLogRepository,
+  IAuthRepository,
+  ICandidateRepository,
+  IElectionRepository,
+  IProfileRepository,
+  IVoteLedgerRepository,
+  IVoterRegistryRepository,
 } from '@/class/service-contracts';
 import { supabase } from '@/class/supabase-client';
 
 class RepositoryBase {
   protected throwOnError(context: string, error: unknown): never {
+    console.error('Supabase Error Details:', error);
     const message = error instanceof Error ? error.message : 'Unknown data access error';
     throw new DataAccessError(`${context}: ${message}`, error);
   }
@@ -34,6 +35,17 @@ export class SupabaseAuthRepository extends RepositoryBase implements IAuthRepos
     if (error) {
       this.throwOnError('Failed to sign in', error);
     }
+  }
+
+  async signUp(email: string, password: string): Promise<string> {
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) {
+      this.throwOnError('Failed to sign up', error);
+    }
+    if (!data.user) {
+      this.throwOnError('Failed to sign up', new Error('No user returned'));
+    }
+    return data.user.id;
   }
 
   async signOut(): Promise<void> {
@@ -70,6 +82,25 @@ export class SupabaseProfileRepository extends RepositoryBase implements IProfil
     }
 
     return (data as ProfileRow | null) ?? null;
+  }
+
+  async create(userId: string, fullName: string, role: ProfileRow['role']): Promise<ProfileRow> {
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: userId,
+        full_name: fullName,
+        role: role,
+        is_verified: false,
+      })
+      .select('*')
+      .single();
+
+    if (error) {
+      this.throwOnError('Failed to create profile', error);
+    }
+
+    return data as ProfileRow;
   }
 }
 
