@@ -1,19 +1,68 @@
+import { serviceFactory } from '@/class/service-factory';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
-
-type UserRole = 'admin' | 'auditor';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function LoginScreen() {
     const router = useRouter();
-    const [selectedRole, setSelectedRole] = useState<UserRole>('admin'); // Default to admin role
-    const [adminId, setAdminId] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleLogin = () => {
-        const route = selectedRole === 'admin' ? '/AdminDashboard' : '/AuditorDashboard'; // Ternary to determine route based on selected role
-        router.push(route);
-        console.log('Login pressed', { role: selectedRole, adminId, password });
+    const handleLogin = async () => {
+        if (!email || !password) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            console.log('Attempting login for:', email);
+
+            // Sign in using the auth service
+            await serviceFactory.authService.signIn(email, password);
+
+            console.log('Login successful, fetching profile...');
+
+            // Get the user profile to check their role
+            const profile = await serviceFactory.authService.getCurrentProfile();
+
+            console.log('Profile fetched:', profile);
+
+            if (!profile) {
+                Alert.alert('Error', 'Profile not found. Please contact support.');
+                await serviceFactory.authService.signOut();
+                return;
+            }
+
+            // Check if the user is an admin
+            if (profile.role !== 'admin') {
+                Alert.alert('Error', 'This account is not registered as admin.');
+                await serviceFactory.authService.signOut();
+                return;
+            }
+
+            // Navigate to admin dashboard
+            console.log('Navigating to dashboard...');
+            router.push('/AdminDashboard');
+        } catch (error) {
+            console.error('Login error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred during login';
+
+            // Check for common error messages
+            if (errorMessage.includes('Email not confirmed')) {
+                Alert.alert(
+                    'Email Not Verified',
+                    'Please check your email and click the verification link before logging in.'
+                );
+            } else if (errorMessage.includes('Invalid login credentials')) {
+                Alert.alert('Login Failed', 'Invalid email or password. Please try again.');
+            } else {
+                Alert.alert('Login Failed', errorMessage);
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleGoHome = () => {
@@ -55,50 +104,20 @@ export default function LoginScreen() {
                     </View>
 
                     {/* Subtitle */}
-                    <Text style={styles.subtitle}>Choose role and login</Text>
+                    <Text style={styles.subtitle}>Admin Login</Text>
 
-                    {/* Role Tabs */}
-                    <View style={styles.tabContainer}>
-                        <Pressable
-                            style={[
-                                styles.tab,
-                                selectedRole === 'admin' && styles.tabActive
-                            ]}
-                            onPress={() => setSelectedRole('admin')}
-                        >
-                            <Text style={[
-                                styles.tabText,
-                                selectedRole === 'admin' && styles.tabTextActive
-                            ]}>
-                                Admin
-                            </Text>
-                        </Pressable>
-                        <Pressable
-                            style={[
-                                styles.tab,
-                                selectedRole === 'auditor' && styles.tabActive
-                            ]}
-                            onPress={() => setSelectedRole('auditor')}
-                        >
-                            <Text style={[
-                                styles.tabText,
-                                selectedRole === 'auditor' && styles.tabTextActive
-                            ]}>
-                                Auditor
-                            </Text>
-                        </Pressable>
-                    </View>
-
-                    {/* Admin ID Input */}
+                    {/* Email Input */}
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Admin ID</Text>
+                        <Text style={styles.label}>Email</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="Type ADMIN01"
+                            placeholder="admin@example.com"
                             placeholderTextColor="#999"
-                            value={adminId}
-                            onChangeText={setAdminId}
-                            autoCapitalize="characters"
+                            value={email}
+                            onChangeText={setEmail}
+                            keyboardType="email-address"
+                            autoCapitalize="none"
+                            editable={!isLoading}
                         />
                     </View>
 
@@ -112,6 +131,7 @@ export default function LoginScreen() {
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
+                            editable={!isLoading}
                         />
                     </View>
 
@@ -119,22 +139,26 @@ export default function LoginScreen() {
                     <Pressable
                         style={({ pressed }) => [
                             styles.loginButton,
-                            pressed && styles.loginButtonPressed
+                            pressed && styles.loginButtonPressed,
+                            isLoading && styles.loginButtonDisabled
                         ]}
                         onPress={handleLogin}
+                        disabled={isLoading}
                     >
-                        <Text style={styles.loginButtonText}>Login</Text>
+                        {isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.loginButtonText}>Login</Text>
+                        )}
                     </Pressable>
 
-                    {/* Register Link - Only show for Admin */}
-                    {selectedRole === 'admin' && (
-                        <View style={styles.registerLinkContainer}>
-                            <Text style={styles.registerText}>Don't have an account? </Text>
-                            <Pressable onPress={() => router.push('/AdminSignup')}>
-                                <Text style={styles.registerLink}>Register here</Text>
-                            </Pressable>
-                        </View>
-                    )}
+                    {/* Register Link */}
+                    <View style={styles.registerLinkContainer}>
+                        <Text style={styles.registerText}>Don't have an account? </Text>
+                        <Pressable onPress={() => router.push('/AdminSignup')}>
+                            <Text style={styles.registerLink}>Register here</Text>
+                        </Pressable>
+                    </View>
                 </View>
             </ScrollView>
         </View>
@@ -227,30 +251,6 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginBottom: 24,
     },
-    tabContainer: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 24,
-    },
-    tab: {
-        flex: 1,
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 6,
-        backgroundColor: '#f5f5f5',
-        alignItems: 'center',
-    },
-    tabActive: {
-        backgroundColor: '#1a73e8',
-    },
-    tabText: {
-        fontSize: 15,
-        fontWeight: '600',
-        color: '#666',
-    },
-    tabTextActive: {
-        color: '#fff',
-    },
     inputContainer: {
         marginBottom: 20,
     },
@@ -279,6 +279,9 @@ const styles = StyleSheet.create({
     },
     loginButtonPressed: {
         opacity: 0.9,
+    },
+    loginButtonDisabled: {
+        opacity: 0.6,
     },
     loginButtonText: {
         color: '#fff',

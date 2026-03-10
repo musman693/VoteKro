@@ -1,6 +1,7 @@
+import { serviceFactory } from '@/class/service-factory';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
 
 export default function AdminSignupScreen() {
     const router = useRouter();
@@ -8,10 +9,53 @@ export default function AdminSignupScreen() {
     const [email, setEmail] = useState('');
     const [adminId, setAdminId] = useState('');
     const [password, setPassword] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleRegister = () => {
-        // TODO: Add registration logic
-        console.log('Register pressed', { fullName, email, adminId, password });
+    const handleRegister = async () => {
+        // Validate inputs
+        if (!fullName || !email || !adminId || !password) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+
+        if (password.length < 8) {
+            Alert.alert('Error', 'Password must be at least 8 characters');
+            return;
+        }
+
+        if (!email.includes('@')) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            // Sign up using the auth service
+            await serviceFactory.authService.signUp({
+                email,
+                password,
+                fullName,
+                role: 'admin',
+                adminId,
+            });
+
+            Alert.alert(
+                'Registration Successful!',
+                'Admin account created successfully! You can now login with your credentials.',
+                [
+                    {
+                        text: 'OK',
+                        onPress: () => router.push('/AdminLogin'),
+                    },
+                ]
+            );
+        } catch (error) {
+            console.error('Signup error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'An error occurred during registration';
+            Alert.alert('Registration Failed', errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleGoHome = () => {
@@ -61,20 +105,22 @@ export default function AdminSignupScreen() {
                             placeholderTextColor="#999"
                             value={fullName}
                             onChangeText={setFullName}
+                            editable={!isLoading}
                         />
                     </View>
 
                     {/* Gmail Address Input */}
                     <View style={styles.inputContainer}>
-                        <Text style={styles.label}>Gmail Address</Text>
+                        <Text style={styles.label}>Email Address</Text>
                         <TextInput
                             style={styles.input}
-                            placeholder="admin@gmail.com"
+                            placeholder="admin@example.com"
                             placeholderTextColor="#999"
                             value={email}
                             onChangeText={setEmail}
                             keyboardType="email-address"
                             autoCapitalize="none"
+                            editable={!isLoading}
                         />
                     </View>
 
@@ -88,6 +134,7 @@ export default function AdminSignupScreen() {
                             value={adminId}
                             onChangeText={setAdminId}
                             autoCapitalize="characters"
+                            editable={!isLoading}
                         />
                     </View>
 
@@ -101,6 +148,7 @@ export default function AdminSignupScreen() {
                             value={password}
                             onChangeText={setPassword}
                             secureTextEntry
+                            editable={!isLoading}
                         />
                     </View>
 
@@ -108,11 +156,17 @@ export default function AdminSignupScreen() {
                     <Pressable
                         style={({ pressed }) => [
                             styles.registerButton,
-                            pressed && styles.registerButtonPressed
+                            pressed && styles.registerButtonPressed,
+                            isLoading && styles.registerButtonDisabled
                         ]}
                         onPress={handleRegister}
+                        disabled={isLoading}
                     >
-                        <Text style={styles.registerButtonText}>✓ Register Admin</Text>
+                        {isLoading ? (
+                            <ActivityIndicator color="#fff" />
+                        ) : (
+                            <Text style={styles.registerButtonText}>✓ Register Admin</Text>
+                        )}
                     </Pressable>
 
                     {/* Login Link */}
@@ -235,6 +289,9 @@ const styles = StyleSheet.create({
     },
     registerButtonPressed: {
         opacity: 0.9,
+    },
+    registerButtonDisabled: {
+        opacity: 0.6,
     },
     registerButtonText: {
         color: '#fff',

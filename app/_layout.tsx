@@ -10,7 +10,6 @@ export default function RootLayout() {
         <Stack.Screen name="AdminLogin" options={{ headerShown: false }} />
         <Stack.Screen name="AdminSignup" options={{ headerShown: false }} />
         <Stack.Screen name="AdminDashboard" options={{ headerShown: false }} />
-        <Stack.Screen name="AuditorDashboard" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="dark" />
     </>
