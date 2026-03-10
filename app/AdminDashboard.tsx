@@ -1,11 +1,14 @@
 import type { ProfileRow } from '@/class/database-types';
 import { serviceFactory } from '@/class/service-factory';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 export default function AdminDashboard() {
     const router = useRouter();
+    const { width } = useWindowDimensions();
+    const isMobile = width < 600;
     const [profile, setProfile] = useState<ProfileRow | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -73,64 +76,204 @@ export default function AdminDashboard() {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <View>
-                    <Text style={styles.headerTitle}>Admin Dashboard</Text>
-                    <Text style={styles.headerSubtitle}>Welcome, {profile?.full_name}</Text>
+            {/* Header - same style as Login/Signup */}
+            <View style={[styles.header, { paddingTop: Platform.OS === 'android' ? (StatusBar.currentHeight || 0) + 16 : 16 }, isMobile && styles.headerMobile]}>
+                <View style={styles.logoContainer}>
+                    <Image
+                        source={require('@/assets/images/icon.png')}
+                        style={styles.logoIcon}
+                    />
+                    <Text style={styles.logoText}>VoteKro</Text>
                 </View>
-                <Pressable
-                    style={({ pressed }) => [
-                        styles.logoutButton,
-                        pressed && styles.logoutButtonPressed
-                    ]}
-                    onPress={handleLogout}
-                >
-                    <Text style={styles.logoutButtonText}>Logout</Text>
-                </Pressable>
+                <View style={[styles.headerRight, isMobile && styles.headerRightMobile]}>
+                    {!isMobile && <Text style={styles.welcomeText}>Welcome, {profile?.full_name ?? 'Administrator'}!</Text>}
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.homeButton,
+                            pressed && styles.homeButtonPressed
+                        ]}
+                        onPress={() => router.replace('/')}
+                    >
+                        <Text style={styles.homeButtonText}>← Home</Text>
+                    </Pressable>
+                    <Pressable
+                        style={({ pressed }) => [
+                            styles.logoutButton,
+                            pressed && styles.logoutButtonPressed
+                        ]}
+                        onPress={handleLogout}
+                    >
+                        <Text style={styles.logoutButtonText}>Logout</Text>
+                    </Pressable>
+                </View>
+                {isMobile && (
+                    <Text style={styles.welcomeTextMobile}>Welcome, {profile?.full_name ?? 'Administrator'}!</Text>
+                )}
             </View>
 
             {/* Main Content */}
             <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
-                <View style={styles.statsContainer}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>0</Text>
-                        <Text style={styles.statLabel}>Total Elections</Text>
+                <View style={styles.innerWrapper}>
+                    {/* Dashboard Title */}
+                    <View style={styles.titleSection}>
+                        <Text style={styles.dashboardTitle}>Admin Dashboard</Text>
+                        <Text style={styles.dashboardSubtitle}>Manage elections and monitor voting activity</Text>
                     </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>0</Text>
-                        <Text style={styles.statLabel}>Active Elections</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statNumber}>0</Text>
-                        <Text style={styles.statLabel}>Total Voters</Text>
-                    </View>
-                </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Quick Actions</Text>
-                    <View style={styles.actionsContainer}>
-                        <Pressable style={styles.actionButton}>
-                            <Text style={styles.actionIcon}>📊</Text>
-                            <Text style={styles.actionText}>Create Election</Text>
-                        </Pressable>
-                        <Pressable style={styles.actionButton}>
-                            <Text style={styles.actionIcon}>👥</Text>
-                            <Text style={styles.actionText}>Manage Voters</Text>
-                        </Pressable>
-                        <Pressable style={styles.actionButton}>
-                            <Text style={styles.actionIcon}>📋</Text>
-                            <Text style={styles.actionText}>View Results</Text>
-                        </Pressable>
+                    {/* Stats Cards */}
+                    <View style={[styles.statsContainer, isMobile && styles.statsContainerMobile]}>
+                        <View style={[styles.statCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth]}>
+                            <Text style={styles.statLabel}>Total Elections</Text>
+                            <Text style={styles.statNumber}>1</Text>
+                        </View>
+                        <View style={[styles.statCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth]}>
+                            <Text style={styles.statLabel}>Registered Voters</Text>
+                            <Text style={styles.statNumber}>0</Text>
+                        </View>
+                        <View style={[styles.statCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth]}>
+                            <Text style={styles.statLabel}>Total Votes Cast</Text>
+                            <Text style={styles.statNumber}>2</Text>
+                        </View>
                     </View>
-                </View>
 
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Recent Elections</Text>
-                    <View style={styles.emptyState}>
-                        <Text style={styles.emptyIcon}>📭</Text>
-                        <Text style={styles.emptyText}>No elections created yet</Text>
-                        <Text style={styles.emptySubtext}>Create your first election to get started</Text>
+                    {/* Quick Actions */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>⚡ Quick Actions</Text>
+                        <View style={[styles.actionsGrid, isMobile && styles.actionsGridMobile]}>
+                            <Pressable style={[styles.actionCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth] as any}>
+                                <View style={styles.cardInner}>
+                                    <LinearGradient colors={['#1a73e8', '#7c3aed', '#e91e8c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardStripe} />
+                                    <View style={styles.cardBody}>
+                                        <Text style={styles.actionIcon}>📋</Text>
+                                        <Text style={styles.actionTitle}>Create New Election</Text>
+                                        <Text style={styles.actionDesc}>Create and configure a new election event</Text>
+                                        <View style={styles.actionBtn}>
+                                            <Text style={styles.actionBtnText}>Create Election +</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Pressable>
+
+                            <Pressable style={[styles.actionCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth] as any}>
+                                <View style={styles.cardInner}>
+                                    <LinearGradient colors={['#1a73e8', '#7c3aed', '#e91e8c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardStripe} />
+                                    <View style={styles.cardBody}>
+                                        <Text style={styles.actionIcon}>✏️</Text>
+                                        <Text style={styles.actionTitle}>Manage Elections</Text>
+                                        <Text style={styles.actionDesc}>Edit, delete, or update election details</Text>
+                                        <View style={styles.actionBtn}>
+                                            <Text style={styles.actionBtnText}>Manage Elections →</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Pressable>
+
+                            <Pressable style={[styles.actionCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth] as any}>
+                                <View style={styles.cardInner}>
+                                    <LinearGradient colors={['#1a73e8', '#7c3aed', '#e91e8c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardStripe} />
+                                    <View style={styles.cardBody}>
+                                        <Text style={styles.actionIcon}>👤</Text>
+                                        <Text style={styles.actionTitle}>Manage Candidates</Text>
+                                        <Text style={styles.actionDesc}>Add, edit, or delete candidates</Text>
+                                        <View style={styles.actionBtn}>
+                                            <Text style={styles.actionBtnText}>Add Candidates +</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Pressable>
+
+                            <Pressable style={[styles.actionCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth] as any}>
+                                <View style={styles.cardInner}>
+                                    <LinearGradient colors={['#1a73e8', '#7c3aed', '#e91e8c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardStripe} />
+                                    <View style={styles.cardBody}>
+                                        <Text style={styles.actionIcon}>📊</Text>
+                                        <Text style={styles.actionTitle}>View Results</Text>
+                                        <Text style={styles.actionDesc}>See voting results and statistics</Text>
+                                        <View style={styles.actionBtn}>
+                                            <Text style={styles.actionBtnText}>View Results →</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Pressable>
+
+                            <Pressable style={[styles.actionCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth] as any}>
+                                <View style={styles.cardInner}>
+                                    <LinearGradient colors={['#1a73e8', '#7c3aed', '#e91e8c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardStripe} />
+                                    <View style={styles.cardBody}>
+                                        <Text style={styles.actionIcon}>✅</Text>
+                                        <Text style={styles.actionTitle}>Register Voter</Text>
+                                        <Text style={styles.actionDesc}>Create voter account with Gmail and random password</Text>
+                                        <View style={styles.actionBtn}>
+                                            <Text style={styles.actionBtnText}>Register Voter +</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Pressable>
+
+                            <Pressable style={[styles.actionCard, isMobile ? styles.cardFullWidth : styles.cardThirdWidth] as any}>
+                                <View style={styles.cardInner}>
+                                    <LinearGradient colors={['#1a73e8', '#7c3aed', '#e91e8c']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.cardStripe} />
+                                    <View style={styles.cardBody}>
+                                        <Text style={styles.actionIcon}>🔍</Text>
+                                        <Text style={styles.actionTitle}>Register Auditor</Text>
+                                        <Text style={styles.actionDesc}>Create auditor account with Gmail and random password</Text>
+                                        <View style={styles.actionBtn}>
+                                            <Text style={styles.actionBtnText}>Register Auditor +</Text>
+                                        </View>
+                                    </View>
+                                </View>
+                            </Pressable>
+                        </View>
+                    </View>
+
+                    {/* Active Elections Table */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>📊 Active Elections</Text>
+                        {isMobile ? (
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                <View style={[styles.tableContainer, { minWidth: 600 }]}>
+                                    {/* Table Header */}
+                                    <View style={styles.tableHeader}>
+                                        <Text style={[styles.tableHeaderCell, { flex: 2, minWidth: 140 }]}>Election Name</Text>
+                                        <View style={styles.headerDivider} />
+                                        <Text style={[styles.tableHeaderCell, { flex: 1, minWidth: 70 }]}>Status</Text>
+                                        <View style={styles.headerDivider} />
+                                        <Text style={[styles.tableHeaderCell, { flex: 1, minWidth: 90 }]}>Start Date</Text>
+                                        <View style={styles.headerDivider} />
+                                        <Text style={[styles.tableHeaderCell, { flex: 1, minWidth: 90 }]}>End Date</Text>
+                                        <View style={styles.headerDivider} />
+                                        <Text style={[styles.tableHeaderCell, { flex: 1, minWidth: 80 }]}>Candidates</Text>
+                                        <View style={styles.headerDivider} />
+                                        <Text style={[styles.tableHeaderCell, { flex: 1, minWidth: 80 }]}>Results</Text>
+                                    </View>
+                                    {/* Empty State */}
+                                    <View style={styles.emptyState}>
+                                        <Text style={styles.emptyText}>No active elections</Text>
+                                    </View>
+                                </View>
+                            </ScrollView>
+                        ) : (
+                            <View style={styles.tableContainer}>
+                                {/* Table Header */}
+                                <View style={styles.tableHeader}>
+                                    <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Election Name</Text>
+                                    <View style={styles.headerDivider} />
+                                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Status</Text>
+                                    <View style={styles.headerDivider} />
+                                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Start Date</Text>
+                                    <View style={styles.headerDivider} />
+                                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>End Date</Text>
+                                    <View style={styles.headerDivider} />
+                                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Candidates</Text>
+                                    <View style={styles.headerDivider} />
+                                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Results</Text>
+                                </View>
+                                {/* Empty State */}
+                                <View style={styles.emptyState}>
+                                    <Text style={styles.emptyText}>No active elections</Text>
+                                </View>
+                            </View>
+                        )}
                     </View>
                 </View>
             </ScrollView>
@@ -154,132 +297,261 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#666',
     },
+    // Header - matches AdminLogin/AdminSignup style exactly
     header: {
-        backgroundColor: '#fff',
-        paddingHorizontal: 20,
-        paddingTop: 60,
-        paddingBottom: 20,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingBottom: 16,
+        backgroundColor: '#fff',
+        borderBottomWidth: 3,
+        borderBottomColor: '#1a73e8',
     },
-    headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#1a1a1a',
-        marginBottom: 4,
+    headerMobile: {
+        flexWrap: 'wrap',
+        gap: 4,
     },
-    headerSubtitle: {
+    welcomeTextMobile: {
+        width: '100%',
+        fontSize: 13,
+        color: '#333',
+        fontWeight: '500',
+        paddingHorizontal: 2,
+        paddingBottom: 4,
+    },
+    logoContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    logoIcon: {
+        width: 24,
+        height: 24,
+    },
+    logoText: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: '#1a73e8',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+    },
+    headerRightMobile: {
+        gap: 8,
+    },
+    welcomeText: {
         fontSize: 14,
-        color: '#666',
+        color: '#333',
+        fontWeight: '500',
     },
     logoutButton: {
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 6,
-        backgroundColor: '#ff4444',
+        borderWidth: 1,
+        borderColor: '#1a73e8',
     },
     logoutButtonPressed: {
-        opacity: 0.8,
+        backgroundColor: '#f0f0f0',
     },
     logoutButtonText: {
-        color: '#fff',
         fontSize: 14,
-        fontWeight: '600',
+        color: '#1a73e8',
+        fontWeight: '500',
+    },
+    homeButton: {
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 6,
+        borderWidth: 1,
+        borderColor: '#1a73e8',
+    },
+    homeButtonPressed: {
+        backgroundColor: '#f0f0f0',
+    },
+    homeButtonText: {
+        fontSize: 14,
+        color: '#1a73e8',
+        fontWeight: '500',
     },
     content: {
         flex: 1,
     },
     contentContainer: {
         padding: 20,
-    },
-    statsContainer: {
-        flexDirection: 'row',
-        gap: 12,
-        marginBottom: 24,
-        flexWrap: 'wrap',
-    },
-    statCard: {
-        flex: 1,
-        minWidth: 100,
-        backgroundColor: '#fff',
-        padding: 20,
-        borderRadius: 12,
         alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
     },
-    statNumber: {
-        fontSize: 32,
+    innerWrapper: {
+        width: '100%',
+        maxWidth: 1100,
+    },
+    titleSection: {
+        marginBottom: 20,
+    },
+    dashboardTitle: {
+        fontSize: 26,
         fontWeight: 'bold',
-        color: '#1a73e8',
-        marginBottom: 4,
-    },
-    statLabel: {
-        fontSize: 12,
-        color: '#666',
-        textAlign: 'center',
-    },
-    section: {
-        marginBottom: 24,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
         color: '#1a1a1a',
-        marginBottom: 12,
-    },
-    actionsContainer: {
-        flexDirection: 'row',
-        gap: 12,
-        flexWrap: 'wrap',
-    },
-    actionButton: {
-        flex: 1,
-        minWidth: 100,
-        backgroundColor: '#fff',
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    actionIcon: {
-        fontSize: 32,
-        marginBottom: 8,
-    },
-    actionText: {
-        fontSize: 13,
-        color: '#333',
-        fontWeight: '500',
-        textAlign: 'center',
-    },
-    emptyState: {
-        backgroundColor: '#fff',
-        padding: 40,
-        borderRadius: 12,
-        alignItems: 'center',
-    },
-    emptyIcon: {
-        fontSize: 48,
-        marginBottom: 12,
-    },
-    emptyText: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#333',
         marginBottom: 4,
     },
-    emptySubtext: {
+    dashboardSubtitle: {
         fontSize: 14,
         color: '#666',
+    },
+    // Stats cards
+    statsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 14,
+        marginBottom: 28,
+    },
+    statsContainerMobile: {
+        flexDirection: 'column',
+    },
+    cardThirdWidth: {
+        width: '31.5%',
+    },
+    cardFullWidth: {
+        width: '100%',
+    },
+    statCard: {
+        backgroundColor: '#e3f2fd',
+        padding: 28,
+        borderRadius: 18,
+        borderWidth: 1.5,
+        borderColor: '#90caf9',
+        shadowColor: '#1a73e8',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    statLabel: {
+        fontSize: 13,
+        color: '#1a73e8',
+        marginBottom: 14,
+        fontWeight: '600',
+    },
+    statNumber: {
+        fontSize: 42,
+        fontWeight: 'bold',
+        color: '#1a73e8',
+    },
+    section: {
+        marginBottom: 28,
+    },
+    sectionTitle: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: '#1a1a1a',
+        marginBottom: 8,
+    },
+    sectionUnderline: {
+        height: 3,
+        width: 55,
+        backgroundColor: '#1a73e8',
+        borderRadius: 2,
+        marginBottom: 16,
+    },
+    // 3-per-row action cards
+    actionsGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 14,
+    },
+    actionsGridMobile: {
+        flexDirection: 'column',
+    },
+    actionCard: {
+        backgroundColor: '#fff',
+        borderRadius: 18,
+        borderWidth: 1.5,
+        borderColor: '#e0e0e0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    actionCardPressed: {
+        opacity: 0.85,
+    },
+    cardInner: {
+        borderRadius: 16,
+        overflow: 'hidden',
+    },
+    cardStripe: {
+        height: 5,
+    },
+    cardBody: {
+        padding: 22,
+    },
+    actionIcon: {
+        fontSize: 30,
+        marginBottom: 12,
+    },
+    actionTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1a1a1a',
+        marginBottom: 6,
+    },
+    actionDesc: {
+        fontSize: 12,
+        color: '#666',
+        lineHeight: 17,
+        marginBottom: 18,
+        flex: 1,
+    },
+    actionBtn: {
+        backgroundColor: '#1a73e8',
+        paddingVertical: 10,
+        paddingHorizontal: 10,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    actionBtnText: {
+        color: '#fff',
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    // Elections table
+    tableContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+        overflow: 'hidden',
+    },
+    tableHeader: {
+        flexDirection: 'row',
+        backgroundColor: '#bbdefb',
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: '#90caf9',
+    },
+    tableHeaderCell: {
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#0d47a1',
+    },
+    headerDivider: {
+        width: 1,
+        backgroundColor: '#90caf9',
+        marginVertical: 2,
+        marginHorizontal: 8,
+    },
+    emptyState: {
+        paddingVertical: 36,
+        alignItems: 'center',
+    },
+    emptyText: {
+        fontSize: 15,
+        color: '#999',
+        fontWeight: '500',
     },
 });

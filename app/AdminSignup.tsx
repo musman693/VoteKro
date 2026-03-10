@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingBottom: 16,
         backgroundColor: '#fff',
-        borderBottomWidth: 1,
+        borderBottomWidth: 3,
         borderBottomColor: '#1a73e8',
     },
     logoContainer: {
@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
     },
     homeButtonText: {
         fontSize: 14,
-        color: '#333',
+        color: '#1a73e8',
         fontWeight: '500',
     },
     scrollContent: {
