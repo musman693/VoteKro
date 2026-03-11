@@ -1,7 +1,6 @@
-import { serviceFactory } from '@/class/service-factory';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type NavbarAction = {
     label: string;
@@ -18,86 +17,72 @@ export function Navbar({ actions = [], infoText }: NavbarProps) {
     const router = useRouter();
     const { width } = useWindowDimensions();
     const isMobile = width < 760;
-    const [isNavigating, setIsNavigating] = useState(false);
+    const insets = useSafeAreaInsets();
 
-    const handleBrandPress = async () => {
-        if (isNavigating) {
-            return;
-        }
-
-        setIsNavigating(true);
-        try {
-            const profile = await serviceFactory.authService.getCurrentProfile();
-            if (profile) {
-                if (profile.role === 'voter') {
-                    router.replace('/VoterDashboard');
-                    return;
-                }
-
-                router.replace('/AdminDashboard');
-                return;
-            }
-
-            router.replace('/');
-        } catch {
-            router.replace('/');
-        } finally {
-            setIsNavigating(false);
-        }
+    const handleBrandPress = () => {
+        router.replace('/');
     };
 
     return (
-        <View style={[styles.navbar, isMobile && styles.navbarMobile]}>
-            <Pressable
-                style={({ pressed }) => [styles.brandWrap, pressed && styles.brandWrapPressed]}
-                onPress={handleBrandPress}
-            >
-                <Text style={styles.brandIcon}>🗳️</Text>
-                <Text style={styles.brandName}>VoteKro</Text>
-            </Pressable>
+        <View style={[styles.navbar, { paddingTop: insets.top + 10 }]}>
+            {/* Top row: brand on left, action buttons on right */}
+            <View style={styles.topRow}>
+                <Pressable
+                    style={({ pressed }) => [styles.brandWrap, pressed && styles.brandWrapPressed]}
+                    onPress={handleBrandPress}
+                >
+                    <Text style={styles.brandIcon}>🗳️</Text>
+                    <Text style={styles.brandName}>VoteKro</Text>
+                </Pressable>
 
-            <View style={[styles.rightWrap, isMobile && styles.rightWrapMobile]}>
-                {!!infoText && <Text style={[styles.infoText, isMobile && styles.infoTextMobile]}>{infoText}</Text>}
-                {actions.map((action, index) => {
-                    const isSolid = action.variant === 'solid';
-
-                    return (
-                        <Pressable
-                            key={`${action.label}-${index}`}
-                            style={({ pressed }) => [
-                                styles.actionButton,
-                                isSolid ? styles.actionButtonSolid : styles.actionButtonOutline,
-                                pressed && styles.actionButtonPressed,
-                            ]}
-                            onPress={action.onPress}
-                        >
-                            <Text style={[styles.actionText, isSolid ? styles.actionTextSolid : styles.actionTextOutline]}>
-                                {action.label}
-                            </Text>
-                        </Pressable>
-                    );
-                })}
+                <View style={styles.actionsRow}>
+                    {/* On desktop, show infoText inline before buttons */}
+                    {!!infoText && !isMobile && (
+                        <Text style={styles.infoText}>{infoText}</Text>
+                    )}
+                    {actions.map((action, index) => {
+                        const isSolid = action.variant === 'solid';
+                        return (
+                            <Pressable
+                                key={`${action.label}-${index}`}
+                                style={({ pressed }) => [
+                                    styles.actionButton,
+                                    isSolid ? styles.actionButtonSolid : styles.actionButtonOutline,
+                                    pressed && styles.actionButtonPressed,
+                                ]}
+                                onPress={action.onPress}
+                            >
+                                <Text style={[styles.actionText, isSolid ? styles.actionTextSolid : styles.actionTextOutline]}>
+                                    {action.label}
+                                </Text>
+                            </Pressable>
+                        );
+                    })}
+                </View>
             </View>
+
+            {/* On mobile, show infoText below the top row as a full-width second line */}
+            {!!infoText && isMobile && (
+                <Text style={styles.infoTextMobile}>{infoText}</Text>
+            )}
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     navbar: {
-        minHeight: 72,
         paddingHorizontal: 24,
-        paddingVertical: 10,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        paddingBottom: 12,
         backgroundColor: '#f0f2f5',
         borderBottomWidth: 2,
         borderBottomColor: '#2d63ea',
         zIndex: 2,
     },
-    navbarMobile: {
-        alignItems: 'flex-start',
-        gap: 10,
+    topRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minHeight: 48,
     },
     brandWrap: {
         flexDirection: 'row',
@@ -116,14 +101,10 @@ const styles = StyleSheet.create({
         fontWeight: '800',
         letterSpacing: 0.2,
     },
-    rightWrap: {
+    actionsRow: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
-    },
-    rightWrapMobile: {
-        width: '100%',
-        flexWrap: 'wrap',
     },
     infoText: {
         fontSize: 14,
@@ -132,8 +113,11 @@ const styles = StyleSheet.create({
         marginRight: 8,
     },
     infoTextMobile: {
-        width: '100%',
-        marginRight: 0,
+        fontSize: 13,
+        color: '#233449',
+        fontWeight: '500',
+        marginTop: 4,
+        paddingHorizontal: 2,
     },
     actionButton: {
         borderRadius: 10,

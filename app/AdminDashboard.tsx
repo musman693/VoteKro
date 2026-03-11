@@ -4,7 +4,7 @@ import { Navbar } from '@/components/navbar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 export default function AdminDashboard() {
     const router = useRouter();
@@ -12,6 +12,7 @@ export default function AdminDashboard() {
     const isMobile = width < 600;
     const [profile, setProfile] = useState<ProfileRow | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     useEffect(() => {
         loadProfile();
@@ -40,30 +41,30 @@ export default function AdminDashboard() {
         }
     };
 
-    const handleLogout = async () => {
-        Alert.alert(
-            'Logout',
-            'Are you sure you want to logout?',
-            [
-                {
-                    text: 'Cancel',
-                    style: 'cancel',
-                },
-                {
-                    text: 'Logout',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await serviceFactory.authService.signOut();
-                            router.replace('/');
-                        } catch (error) {
-                            console.error('Logout error:', error);
-                            Alert.alert('Error', 'Failed to logout');
-                        }
-                    },
-                },
-            ]
-        );
+    const handleLogout = () => {
+        if (Platform.OS === 'web') {
+            setShowLogoutModal(true);
+        } else {
+            Alert.alert(
+                'Logout',
+                'Are you sure you want to logout?',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Logout', style: 'destructive', onPress: doLogout },
+                ]
+            );
+        }
+    };
+
+    const doLogout = async () => {
+        setShowLogoutModal(false);
+        try {
+            await serviceFactory.authService.signOut();
+            router.replace('/');
+        } catch (error) {
+            console.error('Logout error:', error);
+            Alert.alert('Error', 'Failed to logout');
+        }
     };
 
     if (isLoading) {
@@ -77,6 +78,23 @@ export default function AdminDashboard() {
 
     return (
         <View style={styles.container}>
+            {/* Logout confirmation modal (web) */}
+            <Modal transparent visible={showLogoutModal} animationType="fade" onRequestClose={() => setShowLogoutModal(false)}>
+                <View style={styles.modalOverlay}>
+                    <View style={styles.modalBox}>
+                        <Text style={styles.modalTitle}>Logout</Text>
+                        <Text style={styles.modalMessage}>Are you sure you want to logout?</Text>
+                        <View style={styles.modalButtons}>
+                            <Pressable style={styles.modalCancelBtn} onPress={() => setShowLogoutModal(false)}>
+                                <Text style={styles.modalCancelText}>Cancel</Text>
+                            </Pressable>
+                            <Pressable style={styles.modalLogoutBtn} onPress={doLogout}>
+                                <Text style={styles.modalLogoutText}>Logout</Text>
+                            </Pressable>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
             <Navbar
                 infoText={`Welcome, ${profile?.full_name ?? 'Administrator'}!`}
                 actions={[
@@ -266,6 +284,64 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         backgroundColor: '#f5f5f5',
+    },
+    // Logout confirmation modal
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalBox: {
+        backgroundColor: '#fff',
+        borderRadius: 14,
+        padding: 28,
+        width: 320,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.18,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#1a1a1a',
+        marginBottom: 10,
+    },
+    modalMessage: {
+        fontSize: 15,
+        color: '#444',
+        marginBottom: 24,
+        lineHeight: 22,
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        gap: 12,
+    },
+    modalCancelBtn: {
+        paddingVertical: 9,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        borderWidth: 1.5,
+        borderColor: '#ccc',
+    },
+    modalCancelText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#555',
+    },
+    modalLogoutBtn: {
+        paddingVertical: 9,
+        paddingHorizontal: 20,
+        borderRadius: 8,
+        backgroundColor: '#d32f2f',
+    },
+    modalLogoutText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#fff',
     },
     loadingText: {
         marginTop: 12,
